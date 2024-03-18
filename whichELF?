@@ -1,0 +1,113 @@
+#!/bin/bash
+true '
+    "whichELF?" subst. for  type/which		made by  oOosys	created:     2024-02-24_22:47
+					VERSION 1.0	last update:	     2024-03-18_10:46
+			Follow the chain of links and scripts to report the actual executable
+	A tool for use in own self-created custom part of the oOo system able to reveal how
+		deep the indirect calls of an executable in a modern Linux system can be. 
+'
+	s0=$1 sb="	"
+	echo "    $s0"
+	typeType=$(type  $s0  2> /dev/null)	# ... check type (alias, function, builtin, ...)   
+	s1=$(which $s0)						# ... check if executable in $PATH
+	if [  -n "$s1" ] && [ ! -e "${typeType##* }" ]; then # $1 is both: executable and another type so ...
+		echo "$sb-> $typeType "	# ... <- type succeeded, echo the result
+                echo "--- and:"
+	fi
+	if [ ! -e "$s1" ] ; then # failed to find an executable file with this name so ...
+		handleError () { echo "$sb-> ISSUE: $s0  not found"; exit; } # ... assure full control ...
+		trap 'handleError "$BASH_COMMAND"' ERR
+		typeType=$(type  $s0  2> /dev/null)	# ... use  type   and catch an error if any 
+		echo "$sb-> $typeType "	# ... <- type succeeded so echo the result ...
+		sb="	$sb"
+		echo "$sb->MAYBE the current shell  is: $SHELL (???)" # ... fails e.g. in fish ...
+		s2=$(file $SHELL 2>/dev/null) s3=${s2##*:} sb="	$sb"
+		SIZE=$(stat -c%s "$SHELL")		# provide the file size of the executable
+		echo "$sb->$s3"; sb="	$sb"
+		echo "$sb( fileSize = $SIZE bytes )" 
+		exit
+	fi
+	echo "$sb-> $s1"
+
+	BCKPCWD=$(pwd) # backup current working directory (for restore later on)
+	while : ; do
+		DIR="$(dirname "${s1}")"	# FILE="$(basename "${s1}")"
+		SIZE=$(stat -c%s "$s1")		# provide file size of the executable
+		s2=$(file $s1 2>/dev/null) s3=${s2##*:} sb="	$sb"
+		echo "$sb-> $s3"
+		echo "$sb	( fileSize = $SIZE bytes )" 
+		s4=${s3##* }				# get the last column with the file name path
+		cd $DIR						# required for symbolic link with relative path
+		# use $(pwd) to obtain the full path name of current directory 
+		if [ ! -e "$s4" ] ; then
+			if [[ $s3 == *"text"* ]]; then
+				scriptShebang=$(head -n 1 $s1)
+				if [[ "$(printf "$scriptShebang"|head -c2)" == "#!" ]]; then
+					scriptInterpreterPath=$( echo $scriptShebang | cut --delimiter='!' --fields=2 )
+					echo $scriptShebang
+					whichf $scriptInterpreterPath
+				fi
+				sb="	$sb"
+				s5=${s2%%:*} 
+				echo	"$sb-> LAST SCRIPT LINE (may list the actual used or further executable):"
+				sb="	$sb"
+				echo -e	"$sb-> $(cat $s5 | tail -n1)"
+			fi
+			cd $BCKPCWD 			# restore current working directory
+			break					# exit the loop and the script
+		fi
+		s1=$s4
+	done
+<<O
+========================================================================
+~ $ whichELF? pwd
+    pwd
+	-> pwd is a shell builtin 
+--- and:
+	-> /usr/bin/pwd
+		->  ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=cf610477f0530f1dbeac1ed8f650f869fb610d10, for GNU/Linux 3.2.0, stripped
+			( fileSize = 35328 bytes )
+========================================================================
+~ $ whichELF? which
+    which
+	-> /usr/bin/which
+		->  symbolic link to /etc/alternatives/which
+			( fileSize = 23 bytes )
+			->  symbolic link to /usr/bin/which.debianutils
+				( fileSize = 26 bytes )
+				->  POSIX shell script, ASCII text executable
+					( fileSize = 946 bytes )
+#! /bin/sh
+    /bin/sh
+	-> /bin/sh
+		->  symbolic link to dash
+			( fileSize = 4 bytes )
+			->  ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=f7ab02fc1b8ff61b41647c1e16ec9d95ba5de9f0, for GNU/Linux 3.2.0, stripped
+				( fileSize = 125688 bytes )
+					-> LAST SCRIPT LINE (may list the actual used or further executable):
+						-> exit "$ALLRET"
+========================================================================
+~ $ whichELF? type
+    type
+	-> type is a shell builtin 
+		->MAYBE the current shell  is: /bin/bash (???)
+			-> ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=33a5554034feb2af38e8c75872058883b2988bc5, for GNU/Linux 3.2.0, stripped
+				( fileSize = 1396520 bytes )
+========================================================================
+~ $ whichELF? whichELF?
+    whichELF?
+	-> /usr/local/sbin/whichELF?
+		->  symbolic link to /home/o/oOo/ooo/root/usr/local/sbin/whichELF?
+			( fileSize = 45 bytes )
+			->  Bourne-Again shell script, ASCII text executable
+				( fileSize = 3445 bytes )
+#!/bin/bash
+    /bin/bash
+	-> /bin/bash
+		->  ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=33a5554034feb2af38e8c75872058883b2988bc5, for GNU/Linux 3.2.0, stripped
+			( fileSize = 1396520 bytes )
+				-> LAST SCRIPT LINE (may list the actual used or further executable):
+					-> # -- END of whichELF? shell script executing:  cd,echo,file,stat,type,which  --
+========================================================================
+O
+# -- END of whichELF? shell script executing:  cd,echo,file,stat,type,which  --
