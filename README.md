@@ -1,5 +1,5 @@
 # whichELF?
-Improved Linux `which` reporting both: type and the executable (including size).
+Improved Linux `which` reporting both: type and the executable (including size and going the chain of links and scripts as far as possible down to the actual executable).
 ```
 ~ $ whichELF? pwd
     pwd
