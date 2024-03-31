@@ -32,3 +32,10 @@ Allows to detect how deep the system needs to dive down the chain of indirection
 						-> exit "$ALLRET"
 ~ $ 
 ```
+Helps to find the name of the executable providing keywords about its functionality: 
+```
+~ $ whichELF? svg png
+pdftocairo (1)       - Portable Document Format (PDF) to PNG/JPEG/TIFF/PDF/PS/EPS/SVG using cairo
+rsvg-convert (1)     - Render SVG documents to PNG images, or convert them to PDF or PS.
+(END)
+```
